@@ -1,0 +1,97 @@
+﻿<mah:MetroWindow x:Class="Usml_Xml_Pdf_Viewer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+        xmlns:vm="clr-namespace:Usml_Xml_Pdf_Viewer.ViewModel"         
+        xmlns:v="clr-namespace:Usml_Xml_Pdf_Viewer.View"
+        xmlns:PdfViewer="clr-namespace:Syncfusion.Windows.PdfViewer;assembly=Syncfusion.PdfViewer.WPF"  
+        xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:local="clr-namespace:Usml_Xml_Pdf_Viewer"
+        mc:Ignorable="d"
+        Title="{Binding Title}" Height="450" Width="800" ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen" WindowState="Maximized">
+
+    <mah:MetroWindow.DataContext>
+        <vm:MainViewModel />
+    </mah:MetroWindow.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="4.5*"/>
+            <ColumnDefinition Width="4.5*"/>
+        </Grid.ColumnDefinitions>
+
+        <v:MainButtons Grid.ColumnSpan="2"/>
+        
+        
+        <!--<Grid Grid.Row="0" Grid.Column="0">
+            <StackPanel Orientation="Horizontal" Margin="30 20 0 0">
+                
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="Input .xml and .pdf: " FontSize="17" />
+                    <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Background="#1976D2" Foreground="White" Width="105" HorizontalAlignment="Left"/>
+                </StackPanel>
+                
+                <StackPanel Margin="10 0 0 0">
+                    <TextBlock Text="Check which viewer you want to find" />
+                    <TextBlock Text=" the content" />
+
+                    <CheckBox Name="checkboxPDFscroll" Content="PDF Scroll" IsChecked="{Binding IsCheckboxPDFscroll}" Margin="0 10 0 0"/>
+                    <CheckBox Name="checkboxXMLscroll" Content="XML Scroll" IsChecked="{Binding IsCheckboxXMLscroll}" Margin="0 5 0 0"/>
+                </StackPanel>
+
+            </StackPanel>
+        </Grid>-->
+
+
+        <Grid Grid.Column="1" Grid.Row="1">
+            <!--Using Interop.word-->
+            <!--<DocumentViewer Name="richTextBoxAdv" />-->
+
+            <!--TODO make it ScrollChanged-->
+                    <!--<dx:EventToCommand EventName="ScrollChanged" 
+                                       Command="{Binding PDFPageScrollCommand}" />-->
+                                        <!--CommandParameter="{Binding RelativeSource={RelativeSource Self}}" 
+                                                           PassEventArgsToCommand="True"/>-->
+            
+            <!--pdf-->
+            <PdfViewer:PdfViewerControl Name="pdfDocumentControl" 
+                                        ItemSource="{Binding SelectedPDFSourceStream,UpdateSourceTrigger=PropertyChanged, IsAsync=True}" 
+                                        CurrentPage="{Binding CurrentPDFPage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                <dx:Interaction.Behaviors>
+                    <dx:EventToCommand EventName="CurrentPageChanged" 
+                                       Command="{Binding CurrentPageChanged}" CommandParameter="{Binding ElementName=pdfDocumentControl}"/>
+                    <dx:EventToCommand EventName="MouseEnter"
+                                       Command="{Binding PDFViewerMouseHoverCommand}" />
+                </dx:Interaction.Behaviors>
+            </PdfViewer:PdfViewerControl>
+
+            <!--Status indicator-->
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" Visibility="{Binding LoadingStatusPdf, Mode=TwoWay}" 
+                       Background="DarkSlateGray" Foreground="White" Padding="5">
+                 <TextBlock Text="Loading PDF..."/>
+            </TextBlock>
+        </Grid>
+
+        <Grid Grid.Column="0" Grid.Row="1">
+            <TextBlock Text="Xml Coding Entry" Margin="30 1 0 0" FontSize="12"/>
+            <avalonEdit:TextEditor Name="avalonTextEditor" SyntaxHighlighting="XML" FontFamily="Consolas" FontSize="12" WordWrap="True"
+                       Margin="50 30 20 30" Document="{Binding CodingTxtDocument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       VirtualizingPanel.IsVirtualizing="True" >
+                <dx:Interaction.Behaviors>
+                    <dx:EventToCommand EventName="Loaded" Command="{Binding AvalonTextEditor_LoadedCommand}" CommandParameter="{Binding ElementName=avalonTextEditor}"/>
+                    <dx:EventToCommand EventName="MouseEnter"
+                                       Command="{Binding XMLViewerMouseHoverCommand}" />
+                </dx:Interaction.Behaviors>
+            </avalonEdit:TextEditor>
+        </Grid>
+
+    </Grid>
+</mah:MetroWindow>

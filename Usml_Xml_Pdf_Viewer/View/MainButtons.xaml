@@ -1,0 +1,46 @@
+﻿<UserControl x:Class="Usml_Xml_Pdf_Viewer.View.MainButtons"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+             xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+             xmlns:local="clr-namespace:Usml_Xml_Pdf_Viewer.View"
+             mc:Ignorable="d" >
+    <Grid>
+        
+        <Ribbon>
+            <Ribbon.QuickAccessToolBar>
+                <RibbonQuickAccessToolBar Visibility="Collapsed"/>
+            </Ribbon.QuickAccessToolBar>
+            <Ribbon.ApplicationMenu>
+                <RibbonApplicationMenu Visibility="Collapsed"/>
+            </Ribbon.ApplicationMenu>
+            
+            <RibbonTab Header="Main" IsSelected="True">
+
+                <!--Document-->
+                <RibbonGroup Header="Input">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Input .xml and .pdf: " />
+                        <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>
+                        <!--<Button Content="Select Pdf File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>-->
+                    </StackPanel>
+                </RibbonGroup>
+                <RibbonGroup Header="Scrolling">
+                    <StackPanel>
+                        <TextBlock Text="Check which viewer you want to find" />
+                        <TextBlock Text=" the content" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Name="checkboxPDFscroll" Content="PDF Scroll" IsChecked="{Binding IsCheckboxPDFscroll}" Margin="0 10 10 0"/>
+                            <CheckBox Name="checkboxXMLscroll" Content="XML Scroll" IsChecked="{Binding IsCheckboxXMLscroll}" Margin="0 10 0 0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </RibbonGroup>
+                
+                
+            </RibbonTab>
+        </Ribbon>
+    </Grid>
+</UserControl>
