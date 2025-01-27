@@ -29,8 +29,9 @@
         </Grid.ColumnDefinitions>
 
         <v:MainButtons Grid.ColumnSpan="2"/>
-        
-        
+
+        <WebBrowser Grid.Column="0" Grid.Row="1" />
+
         <!--<Grid Grid.Row="0" Grid.Column="0">
             <StackPanel Orientation="Horizontal" Margin="30 20 0 0">
                 

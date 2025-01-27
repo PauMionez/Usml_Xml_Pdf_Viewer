@@ -674,6 +674,18 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
 
+        private void OnXMLViewerMouseHover()
+        {
+            //WarningMessage("Mouse Hover is in Xml text editor");
+            IsCheckboxXMLscroll = true;
+        }
+
+        private void OnPDFViewerMouseHover()
+        {
+            //WarningMessage("Mouse Hover is in PDF viewer");
+            IsCheckboxPDFscroll = true;
+        }
+
         private async Task WriteOutputToTextFile(string outputFilePath)
         {
             try
@@ -713,17 +725,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
 
-        private void OnXMLViewerMouseHover()
-        {
-            //WarningMessage("Mouse Hover is in Xml text editor");
-            IsCheckboxXMLscroll = true;
-        }
-
-        private void OnPDFViewerMouseHover()
-        {
-            //WarningMessage("Mouse Hover is in PDF viewer");
-            IsCheckboxPDFscroll = true;
-        }
+       
 
 
 
