@@ -24,11 +24,14 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
     {
         public AsyncCommand<DocumentViewer> SelectPDFCommand { get; private set; }
         public AsyncCommand<TextEditor> AvalonTextEditor_LoadedCommand { get; private set; }
-
         public DevExpress.Mvvm.DelegateCommand<PdfViewerControl> CurrentPageChanged { get; private set; }
 
-        public DevExpress.Mvvm.DelegateCommand XMLViewerMouseHoverCommand {  get; private set; }
-        public DevExpress.Mvvm.DelegateCommand PDFViewerMouseHoverCommand {  get; private set; }
+        public DevExpress.Mvvm.DelegateCommand XMLViewerMouseHoverCommand { get; private set; }
+        public DevExpress.Mvvm.DelegateCommand PDFViewerMouseHoverCommand { get; private set; }
+        public DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser> LoadXmlCSSWebCommand { get; private set; }
+        public DevExpress.Mvvm.DelegateCommand SearchButtonCommand { get; private set; }
+
+
 
         public MainViewModel()
         {
@@ -39,51 +42,33 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
             XMLViewerMouseHoverCommand = new DevExpress.Mvvm.DelegateCommand(OnXMLViewerMouseHover);
             PDFViewerMouseHoverCommand = new DevExpress.Mvvm.DelegateCommand(OnPDFViewerMouseHover);
+            LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser>(LoadWebBrowserViewer);
+            SearchButtonCommand = new DevExpress.Mvvm.DelegateCommand(SearchButton);
 
             DocumentCollection = new ObservableCollection<DocumentModel>();
-            PdfDocumentCollection = new ObservableCollection<DocumentModel>();
-
             XmlTagsCollection = new ObservableCollection<xmlTagModel>();
             LoadingStatusPdf = Visibility.Hidden;
 
 
         }
 
+        #region Properties
 
-        private DocumentModel _SelectedPdfDocumentItem;
-
-        public DocumentModel SelectedPdfDocumentItem
+        private ObservableCollection<DocumentModel> _DocumentCollection;
+        public ObservableCollection<DocumentModel> DocumentCollection
         {
-            get { return _SelectedPdfDocumentItem; }
-            set { _SelectedPdfDocumentItem = value; OnPropertyChanged(); }
+            get { return _DocumentCollection; }
+            set { _DocumentCollection = value; OnPropertyChanged(); }
         }
 
-        private ObservableCollection<DocumentModel> _PdfDocumentCollection;
-
-        public ObservableCollection<DocumentModel> PdfDocumentCollection
+        private ObservableCollection<xmlTagModel> _xmlTagsCollection;
+        public ObservableCollection<xmlTagModel> XmlTagsCollection
         {
-            get { return _PdfDocumentCollection; }
-            set { _PdfDocumentCollection = value; OnPropertyChanged(); }
-        }
-
-        private ObservableCollection<DocumentModel> _AllPosiblePages;
-
-        public ObservableCollection<DocumentModel> AllPosiblePages
-        {
-            get { return _AllPosiblePages; }
-            set { _AllPosiblePages = value; OnPropertyChanged(); }
-        }
-
-        private int _SelectedPdfDocumentIndex;
-
-        public int SelectedPdfDocumentIndex
-        {
-            get { return _SelectedPdfDocumentIndex; }
-            set { _SelectedPdfDocumentIndex = value; OnPropertyChanged(); }
+            get { return _xmlTagsCollection; }
+            set { _xmlTagsCollection = value; OnPropertyChanged(); }
         }
 
         private string _SelectedPDFSourceStream;
-
         public string SelectedPDFSourceStream
         {
             get { return _SelectedPDFSourceStream; }
@@ -91,13 +76,11 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
         private Visibility _loadingStatusPdf;
-
         public Visibility LoadingStatusPdf
         {
             get { return _loadingStatusPdf; }
             set { _loadingStatusPdf = value; OnPropertyChanged(); }
         }
-
 
         private TextDocument _CodingTxtDocument;
         public TextDocument CodingTxtDocument
@@ -114,40 +97,20 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
         private int _currentPDFPage;
-
         public int CurrentPDFPage
         {
             get { return _currentPDFPage; }
             set { _currentPDFPage = value; OnPropertyChanged(); }
         }
 
-        private ObservableCollection<DocumentModel> _DocumentCollection;
-
-        public ObservableCollection<DocumentModel> DocumentCollection
-        {
-            get { return _DocumentCollection; }
-            set { _DocumentCollection = value; OnPropertyChanged(); }
-        }
-
-        private ObservableCollection<xmlTagModel> _xmlTagsCollection;
-
-        public ObservableCollection<xmlTagModel> XmlTagsCollection
-        {
-            get { return _xmlTagsCollection; }
-            set { _xmlTagsCollection = value; OnPropertyChanged(); }
-        }
-
         private CurrentPageChangedEventHandler _pdfCurrenpageChanged;
-
         public CurrentPageChangedEventHandler PdfCurrenpageChanged
         {
             get { return _pdfCurrenpageChanged; }
             set { _pdfCurrenpageChanged = value; OnPropertyChanged(); }
         }
 
-
         private bool _isCheckboxXMLscroll;
-
         public bool IsCheckboxXMLscroll
         {
             get { return _isCheckboxXMLscroll; }
@@ -156,7 +119,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
                 if (_isCheckboxXMLscroll != value)
                 {
                     _isCheckboxXMLscroll = value;
-                    if (_isCheckboxXMLscroll) 
+                    if (_isCheckboxXMLscroll)
                     {
                         IsCheckboxPDFscroll = false;
                     }
@@ -166,7 +129,6 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
         private bool _isCheckboxPDFscroll;
-
         public bool IsCheckboxPDFscroll
         {
             get { return _isCheckboxPDFscroll; }
@@ -184,16 +146,34 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             }
         }
 
+        private string _browserSource;
+        public string BrowserSource
+        {
+            get { return _browserSource; }
+            set { _browserSource = value; OnPropertyChanged(); }
+        }
 
+        private string _searchTextBox;
 
+        public string SearchTextBox
+        {
+            get { return _searchTextBox; }
+            set { _searchTextBox = value; OnPropertyChanged(); }
+        }
+
+        #endregion
+
+        #region Fields
         public DocumentViewer documentViewerInteropControl = null;
         public TextEditor CodingTextControl = null;
+        public System.Windows.Controls.WebBrowser XmlCssViewer;
         //public string GlobalPDFFilePath;
         public bool UpperPage;
         public bool BottomPage;
         public bool BothTopBottom;
         public string lastDetectedPage;
-
+        private int lastSearchIndex = -1;
+        #endregion
 
 
 
@@ -231,6 +211,8 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
                     }
                 }
 
+                // Convert the local file path to a Uri
+
 
                 await Task.Run(async () =>
                 {
@@ -255,6 +237,107 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
                 //await WriteOutputToTextFile(outputFilePath);
 
+                BrowserSource = xmlFilePath;
+                XmlCssViewer.Navigate(new Uri(BrowserSource));
+
+                //string searchText = TxtSearch.Text;
+
+
+
+                #region Trash code
+
+                //if (XmlCssViewer != null && XmlCssViewer.Document != null)
+                //{
+                //    try
+                //    {
+                //        // Execute JavaScript to get the visible content portion
+                //        string visibleContent = XmlCssViewer.InvokeScript("eval", @"
+                //                var visibleContent = document.documentElement;
+                //                var visibleHeight = window.innerHeight;
+                //                var scrollTop = window.scrollY;
+                //                var documentHeight = document.documentElement.scrollHeight;
+                //                var visibleContentPortion = visibleContent.innerHTML.slice(scrollTop, Math.min(scrollTop + visibleHeight, documentHeight));
+                //                return visibleContentPortion;
+                //            ")?.ToString();
+
+
+                //    // Create an XmlDocument and load the XML file
+                //    XmlDocument xmlDoc = new XmlDocument();
+                //    xmlDoc.Load(visibleContent);
+
+                //    // Example: Access specific nodes within the XML
+                //    XmlNodeList elements = xmlDoc.GetElementsByTagName("page");  // Replace with your XML element name
+                //    foreach (XmlNode node in elements)
+                //    {
+                //        //WarningMessage("Title: " + node.InnerText);
+
+                //        // Check if the node has the 'identifier' attribute
+                //        if (node.Attributes["identifier"] != null)
+                //        {
+                //            string identifier = node.Attributes["identifier"].Value;  // Get the identifier attribute
+                //            string pageContent = node.InnerText;  // Get the content inside the <page> tag
+
+                //            WarningMessage($"Page Content: {pageContent} Page Identifier: {identifier} ");
+
+                //        }
+                //    }
+                //    }
+                //    catch (COMException ex)
+                //    {
+                //        // Handle specific COMException if needed
+                //        WarningMessage("COMException: " + ex.Message);
+                //    }
+                //}
+
+
+                //// Example: Accessing attributes of an XML node
+                //XmlNode lawNode = xmlDoc.SelectSingleNode("//pLaw");
+                //if (lawNode != null)
+                //{
+                //    string lawNumber = lawNode.Attributes["docNumber"]?.Value;
+                //    WarningMessage("Law Number: " + lawNumber);
+                //}
+
+                //// Example: Modifying the XML content
+                //XmlNode firstTitle = xmlDoc.SelectSingleNode("//dc:title");
+                //if (firstTitle != null)
+                //{
+                //    firstTitle.InnerText = "Updated Title"; // Modify the title
+                //}
+
+                //// Saving modified XML back to file
+                //xmlDoc.Save("UpdatedXmlFile.xml");
+
+                //if (XmlCssViewer != null)
+                //{
+                //    XmlCssViewer.Navigate(new Uri(BrowserSource));
+                //    // Wait until the document is fully loaded
+
+                //    if (XmlCssViewer != null)
+                //    {
+                //        IHTMLDocument2 htmlDocument = XmlCssViewer.Document as IHTMLDocument2;
+
+                //        IHTMLSelectionObject currentSelection = htmlDocument.selection;
+
+                //        if (currentSelection != null)
+                //        {
+                //            IHTMLTxtRange range = currentSelection.createRange() as IHTMLTxtRange;
+
+                //            string selectedText = range.text;
+
+                //            if (!string.IsNullOrEmpty(selectedText))
+                //            {
+                //                WarningMessage("Selected Text: " + selectedText);
+                //            }
+                //            else
+                //            {
+                //                WarningMessage("No text selected.");
+                //            }
+                //        }
+                //    }
+
+                //}
+                #endregion
 
             }
             catch (Exception ex)
@@ -263,6 +346,52 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             }
         }
 
+        private void LoadWebBrowserViewer(System.Windows.Controls.WebBrowser XmlViewer)
+        {
+            XmlCssViewer = XmlViewer;
+        }
+
+        
+        /// <summary>
+        /// Search Button
+        /// </summary>
+        private void SearchButton()
+        {
+            if (BrowserSource == null) { WarningMessage("No selected file"); return; }
+
+            if (string.IsNullOrEmpty(SearchTextBox.Trim())) { WarningMessage("Search text cannot be empty"); return; }
+
+            // Start searching after the last found index
+            int startIndex = (lastSearchIndex == -1) ? 0 : lastSearchIndex + SearchTextBox.Trim().Length;
+
+            int index = CodingTextControl.Text.IndexOf(SearchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
+
+            // If no more occurrences found, wrap around and start from the beginning
+            if (index == -1 && lastSearchIndex != -1)
+            {
+                startIndex = 0;
+                index = CodingTextControl.Text.IndexOf(SearchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (index >= 0)
+            {
+                // Update last found position
+                lastSearchIndex = index; 
+
+                var line = CodingTextControl.Document.GetLineByOffset(index);
+                CodingTextControl.ScrollToLine(line.LineNumber);
+                CodingTextControl.Select(index, SearchTextBox.Trim().Length);
+                CodingTextControl.Focus();
+
+            }
+            else
+            {
+                // Reset if nothing is found
+                WarningMessage("No matches found.");
+                lastSearchIndex = -1; 
+            }
+
+        }
 
         private async Task AvalonTextEditor_Loaded(TextEditor xamlInterfaceControlElement)
         {
@@ -725,7 +854,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
 
-       
+
 
 
 

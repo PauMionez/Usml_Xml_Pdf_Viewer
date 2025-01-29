@@ -10,13 +10,20 @@
         xmlns:PdfViewer="clr-namespace:Syncfusion.Windows.PdfViewer;assembly=Syncfusion.PdfViewer.WPF"  
         xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+                 xmlns:cef="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
         xmlns:local="clr-namespace:Usml_Xml_Pdf_Viewer"
+        xmlns:converter="clr-namespace:Usml_Xml_Pdf_Viewer.Service"
         mc:Ignorable="d"
         Title="{Binding Title}" Height="450" Width="800" ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen" WindowState="Maximized">
 
     <mah:MetroWindow.DataContext>
         <vm:MainViewModel />
     </mah:MetroWindow.DataContext>
+
+    <Window.Resources>
+        <!-- Declare the converter -->
+        <converter:StringToUriConverter x:Key="StringToUriConverter" />
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -25,66 +32,58 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="4.5*"/>
+            <ColumnDefinition Width="7"/>
             <ColumnDefinition Width="4.5*"/>
         </Grid.ColumnDefinitions>
 
-        <v:MainButtons Grid.ColumnSpan="2"/>
+        <v:MainButtons Grid.ColumnSpan="3"/>
 
-        <WebBrowser Grid.Column="0" Grid.Row="1" />
-
-        <!--<Grid Grid.Row="0" Grid.Column="0">
-            <StackPanel Orientation="Horizontal" Margin="30 20 0 0">
-                
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Text="Input .xml and .pdf: " FontSize="17" />
-                    <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Background="#1976D2" Foreground="White" Width="105" HorizontalAlignment="Left"/>
-                </StackPanel>
-                
-                <StackPanel Margin="10 0 0 0">
-                    <TextBlock Text="Check which viewer you want to find" />
-                    <TextBlock Text=" the content" />
-
-                    <CheckBox Name="checkboxPDFscroll" Content="PDF Scroll" IsChecked="{Binding IsCheckboxPDFscroll}" Margin="0 10 0 0"/>
-                    <CheckBox Name="checkboxXMLscroll" Content="XML Scroll" IsChecked="{Binding IsCheckboxXMLscroll}" Margin="0 5 0 0"/>
-                </StackPanel>
-
-            </StackPanel>
-        </Grid>-->
-
-
-        <Grid Grid.Column="1" Grid.Row="1">
-            <!--Using Interop.word-->
-            <!--<DocumentViewer Name="richTextBoxAdv" />-->
-
-            <!--TODO make it ScrollChanged-->
-                    <!--<dx:EventToCommand EventName="ScrollChanged" 
-                                       Command="{Binding PDFPageScrollCommand}" />-->
-                                        <!--CommandParameter="{Binding RelativeSource={RelativeSource Self}}" 
-                                                           PassEventArgsToCommand="True"/>-->
-            
+        <GridSplitter Grid.Column="1" Grid.Row="1" Background="LightGray"/>
+        
+        <Grid Grid.Column="2" Grid.Row="1">
             <!--pdf-->
             <PdfViewer:PdfViewerControl Name="pdfDocumentControl" 
-                                        ItemSource="{Binding SelectedPDFSourceStream,UpdateSourceTrigger=PropertyChanged, IsAsync=True}" 
-                                        CurrentPage="{Binding CurrentPDFPage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                                 ItemSource="{Binding SelectedPDFSourceStream,UpdateSourceTrigger=PropertyChanged, IsAsync=True}" 
+                                 CurrentPage="{Binding CurrentPDFPage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
                 <dx:Interaction.Behaviors>
                     <dx:EventToCommand EventName="CurrentPageChanged" 
-                                       Command="{Binding CurrentPageChanged}" CommandParameter="{Binding ElementName=pdfDocumentControl}"/>
+                                Command="{Binding CurrentPageChanged}" CommandParameter="{Binding ElementName=pdfDocumentControl}"/>
                     <dx:EventToCommand EventName="MouseEnter"
-                                       Command="{Binding PDFViewerMouseHoverCommand}" />
+                                Command="{Binding PDFViewerMouseHoverCommand}" />
                 </dx:Interaction.Behaviors>
             </PdfViewer:PdfViewerControl>
 
             <!--Status indicator-->
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" Visibility="{Binding LoadingStatusPdf, Mode=TwoWay}" 
-                       Background="DarkSlateGray" Foreground="White" Padding="5">
-                 <TextBlock Text="Loading PDF..."/>
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" Visibility="{Binding LoadingStatusPdf, Mode=TwoWay}" Background="DarkSlateGray" Foreground="White" Padding="5">
+                <TextBlock Text="Loading PDF..."/>
             </TextBlock>
         </Grid>
 
+        
         <Grid Grid.Column="0" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="7"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <GridSplitter Grid.Row="1" Background="LightGray"/>
+            <!--Xml view base on CSS-->
+        <Grid Grid.Row="0">
+            <TextBlock Text="Xml Css Viewer" Margin="30 1 0 0" FontSize="12"/>
+                <WebBrowser  Name="XmlCssViewer" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0 20 0 0" >
+                <dx:Interaction.Behaviors>
+                    <dx:EventToCommand EventName="Loaded" 
+                    Command="{Binding LoadXmlCSSWebCommand}" CommandParameter="{Binding ElementName=XmlCssViewer}"/>
+                </dx:Interaction.Behaviors>
+            </WebBrowser>
+        </Grid>
+
+        <!--XML Text Editor-->
+        <Grid Grid.Row="2">
             <TextBlock Text="Xml Coding Entry" Margin="30 1 0 0" FontSize="12"/>
             <avalonEdit:TextEditor Name="avalonTextEditor" SyntaxHighlighting="XML" FontFamily="Consolas" FontSize="12" WordWrap="True"
-                       Margin="50 30 20 30" Document="{Binding CodingTxtDocument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Margin="20 20 20 10" Document="{Binding CodingTxtDocument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                        VirtualizingPanel.IsVirtualizing="True" >
                 <dx:Interaction.Behaviors>
                     <dx:EventToCommand EventName="Loaded" Command="{Binding AvalonTextEditor_LoadedCommand}" CommandParameter="{Binding ElementName=avalonTextEditor}"/>
@@ -93,6 +92,6 @@
                 </dx:Interaction.Behaviors>
             </avalonEdit:TextEditor>
         </Grid>
-
+        </Grid>
     </Grid>
 </mah:MetroWindow>

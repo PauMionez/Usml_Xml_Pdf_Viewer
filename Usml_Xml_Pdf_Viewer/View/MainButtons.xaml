@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
              xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro" 
              xmlns:local="clr-namespace:Usml_Xml_Pdf_Viewer.View"
              mc:Ignorable="d" >
     <Grid>
@@ -23,7 +24,7 @@
                 <RibbonGroup Header="Input">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Input .xml and .pdf: " />
-                        <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>
+                        <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#FF1976D2" Foreground="White"/>
                         <!--<Button Content="Select Pdf File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>-->
                     </StackPanel>
                 </RibbonGroup>
@@ -38,7 +39,19 @@
                         </StackPanel>
                     </StackPanel>
                 </RibbonGroup>
-                
+
+                <RibbonGroup Header="Search">
+                    <StackPanel>
+                            <TextBlock Text="Search text in Browser Viewer" Margin="0 3 0 10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding SearchTextBox}" Width="100" Margin="0 0 0 0"/>
+                            <Button Background="#1976D2" Command="{Binding SearchButtonCommand}">
+                                <mah:FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF78B;" Foreground="White" FontSize="10"  />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                </RibbonGroup>
                 
             </RibbonTab>
         </Ribbon>
