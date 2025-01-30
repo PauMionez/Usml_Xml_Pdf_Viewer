@@ -59,7 +59,14 @@
                     <TextBlock Text="Save and Update Xml" Margin="0 3 0 10"/>
                     <Button Command="{Binding SaveUpdateXmlFileCommand}" Content="Save and Update" Background="#1976D2" Foreground="White"/>
                 </RibbonGroup>
-                
+                <RibbonGroup Header="Xml Viewer">
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <CheckBox IsChecked="{Binding IsXmlViewerChecked, Mode=TwoWay}" Content="Show / Hide XML Viewer">
+                           
+                        </CheckBox>
+                    </StackPanel>
+                    <!--<Button Command="{Binding ToggleXMLViewer}" Content="Show" Background="#1976D2" Foreground="White"/>-->
+                </RibbonGroup>
             </RibbonTab>
         </Ribbon>
     </Grid>

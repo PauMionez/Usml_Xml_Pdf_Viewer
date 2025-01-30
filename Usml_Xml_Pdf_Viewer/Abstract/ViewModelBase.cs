@@ -26,7 +26,7 @@ namespace Usml_Xml_Pdf_Viewer.Abstract
         {
             get
             {
-                return $"{ApplicationName} v1.2025";
+                return $"{ApplicationName} v2.2.2025";
             }
         }
 

@@ -178,6 +178,28 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             set { _showSearchTag = value; OnPropertyChanged(); }
         }
 
+        private bool _isXmlViewerChecked;
+
+        public bool IsXmlViewerChecked
+        {
+            get { return _isXmlViewerChecked; }
+            set
+            {
+                _isXmlViewerChecked = value; 
+                OnPropertyChanged(nameof(IsXmlViewerChecked));
+                OnPropertyChanged(nameof(XmlEditorVisibility));
+                OnPropertyChanged(nameof(BrowserGridRowSpan)); // Notify UI of change }
+            }
+        }
+
+        //private int _browserGridRowSpan;
+
+        //public int BrowserGridRowSpan
+        //{
+        //    get { return _browserGridRowSpan; }
+        //    set { _browserGridRowSpan = value; OnPropertyChanged(); }
+        //}
+
 
         #endregion
 
@@ -193,6 +215,8 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         public string lastDetectedPage;
         private int lastSearchIndex = -1;
         private ChromiumWebBrowser CefBrowsers;
+        public Visibility XmlEditorVisibility => IsXmlViewerChecked ? Visibility.Visible : Visibility.Hidden;
+        public int BrowserGridRowSpan => IsXmlViewerChecked ? 1 : 3;
         #endregion
 
 
@@ -272,8 +296,8 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
                     var visiblePageTag = e.Message.ToString();
                     VisibleChangeAsync(visiblePageTag);
                 };
-                ///*BrowserViewe*/
-                //rScroll();
+
+                //BrowserViewerScroll();
 
                 #region Trash code
 

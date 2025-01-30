@@ -64,9 +64,9 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
-            <GridSplitter Grid.Row="1" Background="LightGray"/>
+            <GridSplitter Grid.Row="1" Visibility="{Binding XmlEditorVisibility}" Background="LightGray"/>
             <!--Xml view base on CSS-->
-        <Grid Grid.Row="0">
+            <Grid Grid.Row="0" Grid.RowSpan="{Binding BrowserGridRowSpan}">
             <TextBlock Text="Xml Css Viewer" Margin="30 1 0 0" FontSize="12"  />
                 <cef:ChromiumWebBrowser x:Name="CefBrowser">
                     <dx:Interaction.Behaviors>
@@ -85,7 +85,7 @@
         </Grid>
 
         <!--XML Text Editor-->
-        <Grid Grid.Row="2" Visibility="Visible">
+        <Grid Grid.Row="2" Visibility="{Binding XmlEditorVisibility}">
             <TextBlock Text="Xml Coding Entry" Margin="30 1 0 0" FontSize="12"/>
             <avalonEdit:TextEditor Name="avalonTextEditor" SyntaxHighlighting="XML" FontFamily="Consolas" FontSize="12" WordWrap="True"
                        Margin="20 20 20 10" Document="{Binding CodingTxtDocument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
