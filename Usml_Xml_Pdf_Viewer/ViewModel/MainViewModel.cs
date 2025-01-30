@@ -33,6 +33,8 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         //public DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser> LoadXmlCSSWebCommand { get; private set; }
         public DevExpress.Mvvm.DelegateCommand<ChromiumWebBrowser> LoadXmlCSSWebCommand { get; private set; }
         public DevExpress.Mvvm.DelegateCommand SearchButtonCommand { get; private set; }
+        public DevExpress.Mvvm.DelegateCommand SaveUpdateXmlFileCommand { get; private set; }
+
         
 
 
@@ -49,6 +51,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             //LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser>(LoadWebBrowserViewer);
             LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<ChromiumWebBrowser>(LoadWebBrowserViewer);
             SearchButtonCommand = new DevExpress.Mvvm.DelegateCommand(SearchButton);
+            SaveUpdateXmlFileCommand = new DevExpress.Mvvm.DelegateCommand(SaveUpdateXmlFile);
            
 
             DocumentCollection = new ObservableCollection<DocumentModel>();
@@ -167,6 +170,15 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             set { _searchTextBox = value; OnPropertyChanged(); }
         }
 
+        private string _showSearchTag;
+
+        public string ShowSearchTag
+        {
+            get { return _showSearchTag; }
+            set { _showSearchTag = value; OnPropertyChanged(); }
+        }
+
+
         #endregion
 
 
@@ -257,10 +269,11 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
                 CefBrowsers.JavascriptMessageReceived += (sender, e) =>
                 {
-                    var visiblePageTag = e.Message.ToString();  
+                    var visiblePageTag = e.Message.ToString();
                     VisibleChangeAsync(visiblePageTag);
                 };
-
+                ///*BrowserViewe*/
+                //rScroll();
 
                 #region Trash code
 
@@ -366,10 +379,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
 
 
-        //private void LoadWebBrowserViewer(System.Windows.Controls.WebBrowser XmlViewer)
-        //{
-        //    //XmlCssViewer = XmlViewer;
-        //}
+        
         private void LoadWebBrowserViewer(ChromiumWebBrowser XmlViewer)
         {
             CefBrowsers = XmlViewer;
@@ -571,6 +581,9 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
                 var pageIdentifierPosition = new Regex(@"<page\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
 
 
+                var pageIdentifierbrowser = new Regex(@"<page\s+xmlns=""http://schemas\.gpo\.gov/xml/uslm""\s+identifier=""([^""]+)""\s*>\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+                var pageIdentifierPositionbroser = new Regex(@"<page\s+xmlns=""http://schemas.gpo.gov/xml/uslm""\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+
                 if (pageIdentifierPosition.IsMatch(text))
                 {
                     foreach (Match match in pageIdentifierPosition.Matches(text))
@@ -617,6 +630,42 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
                         BottomPage = false;
 
                         return pagevalue;
+                    }
+                }
+                else if (pageIdentifierbrowser.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifierbrowser.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;
+                        string pagevalue = match.Groups[2].Value;
+
+                        BottomPage = false;
+                        UpperPage = true;
+
+                        return pagevalue;
+
+                    }
+                }
+                if (pageIdentifierPositionbroser.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifierPositionbroser.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;
+                        string renderingPosition = match.Groups[2].Value;
+                        string pagevalue = match.Groups[3].Value;
+
+                        if (renderingPosition == "bottom")
+                        {
+                            BottomPage = true;
+                            UpperPage = false;
+                        }
+                        else
+                        {
+                            BottomPage = false;
+                        }
+
+                        return pagevalue;
+
                     }
                 }
 
@@ -865,7 +914,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             GetPDFContent GetPDFContentService = new GetPDFContent();
             string getTag = await GetVisiblePageNumberAsync();
 
-            string browsertag = TagPageRegexBrowser(getTag);
+            string browsertag = TagPageRegex(getTag);
 
             if (browsertag != null && lastDetectedPage != browsertag)
             {
@@ -937,7 +986,9 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
                 if (response.Success && response.Result is string visiblePageTag)
                 {
-                    WarningMessage($"Visible Page Tag: {visiblePageTag}");
+                    InformationMessage($"Visible Page Tag: {visiblePageTag}", "Conformation");
+                    //ShowSearchTag = visiblePageTag;
+
                     return visiblePageTag;
                 }
             }
@@ -945,120 +996,6 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             return null;
         }
                
-
-
-        private string TagPageRegexBrowser(string text)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(text))
-                    return null;
-
-                var pageonly = new Regex(@"<page>\s*([IVXLCDM\d]+)\s*</page>", RegexOptions.IgnoreCase);
-                var pageIdentifier = new Regex(@"<page\s+identifier=""([^""]+)""\s*>\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
-                var pageIdentifierPosition = new Regex(@"<page\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
-
-                var pageIdentifierbrowser = new Regex(@"<page\s+xmlns=""http://schemas\.gpo\.gov/xml/uslm""\s+identifier=""([^""]+)""\s*>\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
-                var pageIdentifierPositionbroser = new Regex(@"<page\s+xmlns=""http://schemas.gpo.gov/xml/uslm""\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
-
-                if (pageIdentifierPosition.IsMatch(text))
-                {
-                    foreach (Match match in pageIdentifierPosition.Matches(text))
-                    {
-                        string identifier = match.Groups[1].Value;
-                        string renderingPosition = match.Groups[2].Value;
-                        string pagevalue = match.Groups[3].Value;
-
-                        if (renderingPosition == "bottom")
-                        {
-                            BottomPage = true;
-                            UpperPage = false;
-                        }
-                        else
-                        {
-                            BottomPage = false;
-                        }
-
-                        return pagevalue;
-                        //Console.WriteLine($"Identifier: {identifier}, Position: {renderingPosition}, Page: {pageNumber}");
-                    }
-                }
-                else if (pageIdentifier.IsMatch(text))
-                {
-                    foreach (Match match in pageIdentifier.Matches(text))
-                    {
-                        string identifier = match.Groups[1].Value;
-                        string pagevalue = match.Groups[2].Value;
-
-                        BottomPage = false;
-                        UpperPage = true;
-
-                        return pagevalue;
-                    }
-                }
-                else if (pageonly.IsMatch(text))
-                {
-                    foreach (Match match in pageonly.Matches(text))
-                    {
-                        string pagevalue = match.Groups[1].Value.Trim();
-
-                        BothTopBottom = true;
-                        UpperPage = false;
-                        BottomPage = false;
-
-                        return pagevalue;
-                    }
-                }
-                else if (pageIdentifierbrowser.IsMatch(text))
-                {
-                    foreach (Match match in pageIdentifierbrowser.Matches(text))
-                    {
-                        string identifier = match.Groups[1].Value;
-                        string pagevalue = match.Groups[2].Value;
-
-                        BottomPage = false;
-                        UpperPage = true;
-
-                        return pagevalue;
-
-                    }
-                }
-                if (pageIdentifierPositionbroser.IsMatch(text))
-                {
-                    foreach (Match match in pageIdentifierPositionbroser.Matches(text))
-                    {
-                        string identifier = match.Groups[1].Value;  // Extract identifier value
-                        string renderingPosition = match.Groups[2].Value;  // Extract rendering position value
-                        string pagevalue = match.Groups[3].Value;  // Extract the page number value
-
-                        if (renderingPosition == "bottom")
-                        {
-                            BottomPage = true;
-                            UpperPage = false;
-                        }
-                        else
-                        {
-                            BottomPage = false;
-                        }
-
-                        return pagevalue;
-
-                    }
-                }
-
-
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage(ex);
-                return null;
-            }
-        }
-
-
-
 
 
         private async Task VisibleChangeAsync(string page)
@@ -1072,7 +1009,7 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             GetPDFContent GetPDFContentService = new GetPDFContent();
             //string getTag = await GetVisiblePageNumberAsync();
 
-            string browsertag = TagPageRegexBrowser(page);
+            string browsertag = TagPageRegex(page);
 
             if (browsertag != null && lastDetectedPage != browsertag)
             {
@@ -1111,11 +1048,55 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         }
 
 
+        private void SaveUpdateXmlFile()
+        {
+            if (CodingTxtDocument == null) return;
+
+            // Get the updated XML text from AvalonEdit
+            string updatedXml = CodingTxtDocument.Text;
+
+            // Save it to the XML file
+            File.WriteAllText(BrowserSource, updatedXml, Encoding.UTF8);
+
+            // Reload the updated XML file in the browser
+            if (CefBrowsers != null && CefBrowsers.IsBrowserInitialized)
+            {
+                //InformationMessage("Success Update Xml", "Successful");
+                // Remove existing event listeners to prevent duplicates
+                CefBrowsers.JavascriptMessageReceived -= OnJavaScriptMessageReceived;
+
+                // Reload the browser
+                CefBrowsers.LoadingStateChanged += (sender, args) =>
+                {
+                    if (!args.IsLoading)
+                    {
+                        ExecuteJavaScriptOnPageLoad(); // Reattach JavaScript scroll listener
+                    }
+                };
+                CefBrowsers.Reload();
+            }
+        }
 
 
+        // Separate method to handle JavaScript messages
+        private void OnJavaScriptMessageReceived(object sender, JavascriptMessageReceivedEventArgs e)
+        {
+            var visiblePageTag = e.Message.ToString();
+            VisibleChangeAsync(visiblePageTag);
+        }
 
 
+        //private void BrowserViewerScroll()
+        //{
+        //    //Browser Viewer Scroll 
+        //    ExecuteJavaScriptOnPageLoad();
 
+        //    CefBrowsers.JavascriptMessageReceived += (sender, e) =>
+        //    {
+        //        var visiblePageTag = e.Message.ToString();
+        //        VisibleChangeAsync(visiblePageTag);
+        //    };
+        //}
         #region trash code
         //public string BottomLeftRightText(IReadOnlyList<UglyToad.PdfPig.DocumentLayoutAnalysis.TextBlock> blocks, UglyToad.PdfPig.Content.Page pageText)
         //{

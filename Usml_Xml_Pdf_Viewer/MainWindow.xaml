@@ -71,6 +71,7 @@
                 <cef:ChromiumWebBrowser x:Name="CefBrowser">
                     <dx:Interaction.Behaviors>
                         <dx:EventToCommand EventName="Loaded" Command="{Binding LoadXmlCSSWebCommand}" CommandParameter="{Binding ElementName=CefBrowser}"/>
+                        <dx:EventToCommand EventName="MouseEnter" Command="{Binding PDFViewerMouseHoverCommand}" />
                     </dx:Interaction.Behaviors>
                 </cef:ChromiumWebBrowser>
                                     
@@ -84,7 +85,7 @@
         </Grid>
 
         <!--XML Text Editor-->
-        <Grid Grid.Row="2" Visibility="Hidden">
+        <Grid Grid.Row="2" Visibility="Visible">
             <TextBlock Text="Xml Coding Entry" Margin="30 1 0 0" FontSize="12"/>
             <avalonEdit:TextEditor Name="avalonTextEditor" SyntaxHighlighting="XML" FontFamily="Consolas" FontSize="12" WordWrap="True"
                        Margin="20 20 20 10" Document="{Binding CodingTxtDocument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
