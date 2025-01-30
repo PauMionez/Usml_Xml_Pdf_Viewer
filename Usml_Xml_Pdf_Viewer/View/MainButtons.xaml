@@ -24,7 +24,7 @@
                 <RibbonGroup Header="Input">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Input .xml and .pdf: " />
-                        <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#FF1976D2" Foreground="White"/>
+                        <Button Content="Select File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>
                         <!--<Button Content="Select Pdf File" Command="{Binding SelectPDFCommand}" CommandParameter="{Binding ElementName=richTextBoxAdv}"  Margin="5" Background="#1976D2" Foreground="White"/>-->
                     </StackPanel>
                 </RibbonGroup>

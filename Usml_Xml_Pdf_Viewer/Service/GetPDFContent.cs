@@ -40,7 +40,8 @@ namespace Usml_Xml_Pdf_Viewer.Service
             try
             {
 
-                var bottomBlocks = blocks.Where(b => b.BoundingBox.Top < (pageText.Height / 3));
+                //var bottomBlocks = blocks.Where(b => b.BoundingBox.Top < (pageText.Height / 3));
+                var bottomBlocks = blocks.OrderBy(b => b.BoundingBox.Bottom).Take(1);
 
                 string bottomBlockText = string.Join(" ", bottomBlocks.Select(b => b.Text));
                 return $"{bottomBlockText}".Trim();

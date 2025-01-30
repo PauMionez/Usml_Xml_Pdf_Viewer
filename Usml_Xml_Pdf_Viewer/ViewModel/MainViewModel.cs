@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using CefSharp;
+using CefSharp.Wpf;
 using DevExpress.Mvvm;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Document;
@@ -28,8 +30,10 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
         public DevExpress.Mvvm.DelegateCommand XMLViewerMouseHoverCommand { get; private set; }
         public DevExpress.Mvvm.DelegateCommand PDFViewerMouseHoverCommand { get; private set; }
-        public DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser> LoadXmlCSSWebCommand { get; private set; }
+        //public DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser> LoadXmlCSSWebCommand { get; private set; }
+        public DevExpress.Mvvm.DelegateCommand<ChromiumWebBrowser> LoadXmlCSSWebCommand { get; private set; }
         public DevExpress.Mvvm.DelegateCommand SearchButtonCommand { get; private set; }
+        
 
 
 
@@ -42,8 +46,10 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
             XMLViewerMouseHoverCommand = new DevExpress.Mvvm.DelegateCommand(OnXMLViewerMouseHover);
             PDFViewerMouseHoverCommand = new DevExpress.Mvvm.DelegateCommand(OnPDFViewerMouseHover);
-            LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser>(LoadWebBrowserViewer);
+            //LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<System.Windows.Controls.WebBrowser>(LoadWebBrowserViewer);
+            LoadXmlCSSWebCommand = new DevExpress.Mvvm.DelegateCommand<ChromiumWebBrowser>(LoadWebBrowserViewer);
             SearchButtonCommand = new DevExpress.Mvvm.DelegateCommand(SearchButton);
+           
 
             DocumentCollection = new ObservableCollection<DocumentModel>();
             XmlTagsCollection = new ObservableCollection<xmlTagModel>();
@@ -163,16 +169,18 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
         #endregion
 
+
         #region Fields
         public DocumentViewer documentViewerInteropControl = null;
         public TextEditor CodingTextControl = null;
-        public System.Windows.Controls.WebBrowser XmlCssViewer;
+        //public System.Windows.Controls.WebBrowser XmlCssViewer;
         //public string GlobalPDFFilePath;
         public bool UpperPage;
         public bool BottomPage;
         public bool BothTopBottom;
         public string lastDetectedPage;
         private int lastSearchIndex = -1;
+        private ChromiumWebBrowser CefBrowsers;
         #endregion
 
 
@@ -237,11 +245,21 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
                 //await WriteOutputToTextFile(outputFilePath);
 
+
+                //Load input xml to Browser Viewer
                 BrowserSource = xmlFilePath;
-                XmlCssViewer.Navigate(new Uri(BrowserSource));
+                CefBrowsers.Address = new Uri(BrowserSource).AbsoluteUri;
+                //XmlCssViewer.Navigate(new Uri(BrowserSource));
 
-                //string searchText = TxtSearch.Text;
 
+                //Browser Viewer Scroll 
+                ExecuteJavaScriptOnPageLoad();
+
+                CefBrowsers.JavascriptMessageReceived += (sender, e) =>
+                {
+                    var visiblePageTag = e.Message.ToString();  
+                    VisibleChangeAsync(visiblePageTag);
+                };
 
 
                 #region Trash code
@@ -346,12 +364,17 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             }
         }
 
-        private void LoadWebBrowserViewer(System.Windows.Controls.WebBrowser XmlViewer)
+
+
+        //private void LoadWebBrowserViewer(System.Windows.Controls.WebBrowser XmlViewer)
+        //{
+        //    //XmlCssViewer = XmlViewer;
+        //}
+        private void LoadWebBrowserViewer(ChromiumWebBrowser XmlViewer)
         {
-            XmlCssViewer = XmlViewer;
+            CefBrowsers = XmlViewer;
         }
 
-        
         /// <summary>
         /// Search Button
         /// </summary>
@@ -359,38 +382,11 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         {
             if (BrowserSource == null) { WarningMessage("No selected file"); return; }
 
-            if (string.IsNullOrEmpty(SearchTextBox.Trim())) { WarningMessage("Search text cannot be empty"); return; }
+            if (string.IsNullOrEmpty(SearchTextBox)) { WarningMessage("Search text cannot be empty"); return; }
 
-            // Start searching after the last found index
-            int startIndex = (lastSearchIndex == -1) ? 0 : lastSearchIndex + SearchTextBox.Trim().Length;
+            SearchTextInCefSharp(SearchTextBox.Trim());
 
-            int index = CodingTextControl.Text.IndexOf(SearchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
-
-            // If no more occurrences found, wrap around and start from the beginning
-            if (index == -1 && lastSearchIndex != -1)
-            {
-                startIndex = 0;
-                index = CodingTextControl.Text.IndexOf(SearchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (index >= 0)
-            {
-                // Update last found position
-                lastSearchIndex = index; 
-
-                var line = CodingTextControl.Document.GetLineByOffset(index);
-                CodingTextControl.ScrollToLine(line.LineNumber);
-                CodingTextControl.Select(index, SearchTextBox.Trim().Length);
-                CodingTextControl.Focus();
-
-            }
-            else
-            {
-                // Reset if nothing is found
-                WarningMessage("No matches found.");
-                lastSearchIndex = -1; 
-            }
-
+            //SearchTextInXMLViewControl(SearchTextBox.Trim());
         }
 
         private async Task AvalonTextEditor_Loaded(TextEditor xamlInterfaceControlElement)
@@ -398,13 +394,12 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
             try
             {
                 CodingTextControl = xamlInterfaceControlElement;
-                //await Task.Run(() =>
-                //{
+
                 if (CodingTextControl?.TextArea?.TextView != null)
                 {
                     CodingTextControl.TextArea.TextView.ScrollOffsetChanged += TextViewScrollOffsetChanged;
                 }
-                // });
+
             }
             catch (Exception ex)
             {
@@ -855,34 +850,270 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
 
 
 
+        private async void SearchTextInCefSharp(string searchText, bool findNext = false)
+        {
+
+            if (CefBrowsers == null || !CefBrowsers.IsBrowserInitialized)
+            {
+                WarningMessage("Browser is not ready.");
+                return;
+            }
+
+            CefBrowsers.GetBrowser().Find(searchText, forward: true, matchCase: false, findNext: true);
+
+
+            GetPDFContent GetPDFContentService = new GetPDFContent();
+            string getTag = await GetVisiblePageNumberAsync();
+
+            string browsertag = TagPageRegexBrowser(getTag);
+
+            if (browsertag != null && lastDetectedPage != browsertag)
+            {
+                lastDetectedPage = browsertag;
+
+                int getPdfPage = GetPDFContentService.FindPDFPageByContent(DocumentCollection, browsertag, UpperPage, BottomPage, BothTopBottom);
+
+                if (getPdfPage != 0)
+                {
+                    CurrentPDFPage = getPdfPage;
+
+                }
+                else { return; }
+            }
+        }
+
+        private void SearchTextInXMLViewControl(string searchTextBox)
+        {
+            // Start searching after the last found index
+            int startIndex = (lastSearchIndex == -1) ? 0 : lastSearchIndex + searchTextBox.Trim().Length;
+
+            int index = CodingTextControl.Text.IndexOf(searchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
+
+            // If no more occurrences found, wrap around and start from the beginning
+            if (index == -1 && lastSearchIndex != -1)
+            {
+                startIndex = 0;
+                index = CodingTextControl.Text.IndexOf(searchTextBox.Trim(), startIndex, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (index >= 0)
+            {
+                // Update last found position
+                lastSearchIndex = index;
+
+                var line = CodingTextControl.Document.GetLineByOffset(index);
+                CodingTextControl.ScrollToLine(line.LineNumber);
+                CodingTextControl.Select(index, searchTextBox.Trim().Length);
+                CodingTextControl.Focus();
+
+            }
+            else
+            {
+                // Reset if nothing is found
+                WarningMessage("No matches found.");
+                lastSearchIndex = -1;
+            }
+        }
+
+        private async Task<string> GetVisiblePageNumberAsync()
+        {
+            if (CefBrowsers.CanExecuteJavascriptInMainFrame)
+            {
+                string script = @"
+                        (() => {
+                            const pages = document.querySelectorAll('page');
+                            for (const page of pages) {
+                                const rect = page.getBoundingClientRect();
+                                if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                                    return page.outerHTML;
+                                }
+                            }
+                            return null;
+                        })();";
+
+
+
+                var response = await CefBrowsers.EvaluateScriptAsync(script);
+
+                if (response.Success && response.Result is string visiblePageTag)
+                {
+                    WarningMessage($"Visible Page Tag: {visiblePageTag}");
+                    return visiblePageTag;
+                }
+            }
+
+            return null;
+        }
+               
+
+
+        private string TagPageRegexBrowser(string text)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(text))
+                    return null;
+
+                var pageonly = new Regex(@"<page>\s*([IVXLCDM\d]+)\s*</page>", RegexOptions.IgnoreCase);
+                var pageIdentifier = new Regex(@"<page\s+identifier=""([^""]+)""\s*>\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+                var pageIdentifierPosition = new Regex(@"<page\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+
+                var pageIdentifierbrowser = new Regex(@"<page\s+xmlns=""http://schemas\.gpo\.gov/xml/uslm""\s+identifier=""([^""]+)""\s*>\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+                var pageIdentifierPositionbroser = new Regex(@"<page\s+xmlns=""http://schemas.gpo.gov/xml/uslm""\s+identifier=""([^""]+)""\s+renderingPosition=""([^""]+)"">\s*(\d+)\s*</page>", RegexOptions.IgnoreCase);
+
+                if (pageIdentifierPosition.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifierPosition.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;
+                        string renderingPosition = match.Groups[2].Value;
+                        string pagevalue = match.Groups[3].Value;
+
+                        if (renderingPosition == "bottom")
+                        {
+                            BottomPage = true;
+                            UpperPage = false;
+                        }
+                        else
+                        {
+                            BottomPage = false;
+                        }
+
+                        return pagevalue;
+                        //Console.WriteLine($"Identifier: {identifier}, Position: {renderingPosition}, Page: {pageNumber}");
+                    }
+                }
+                else if (pageIdentifier.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifier.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;
+                        string pagevalue = match.Groups[2].Value;
+
+                        BottomPage = false;
+                        UpperPage = true;
+
+                        return pagevalue;
+                    }
+                }
+                else if (pageonly.IsMatch(text))
+                {
+                    foreach (Match match in pageonly.Matches(text))
+                    {
+                        string pagevalue = match.Groups[1].Value.Trim();
+
+                        BothTopBottom = true;
+                        UpperPage = false;
+                        BottomPage = false;
+
+                        return pagevalue;
+                    }
+                }
+                else if (pageIdentifierbrowser.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifierbrowser.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;
+                        string pagevalue = match.Groups[2].Value;
+
+                        BottomPage = false;
+                        UpperPage = true;
+
+                        return pagevalue;
+
+                    }
+                }
+                if (pageIdentifierPositionbroser.IsMatch(text))
+                {
+                    foreach (Match match in pageIdentifierPositionbroser.Matches(text))
+                    {
+                        string identifier = match.Groups[1].Value;  // Extract identifier value
+                        string renderingPosition = match.Groups[2].Value;  // Extract rendering position value
+                        string pagevalue = match.Groups[3].Value;  // Extract the page number value
+
+                        if (renderingPosition == "bottom")
+                        {
+                            BottomPage = true;
+                            UpperPage = false;
+                        }
+                        else
+                        {
+                            BottomPage = false;
+                        }
+
+                        return pagevalue;
+
+                    }
+                }
+
+
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage(ex);
+                return null;
+            }
+        }
 
 
 
 
 
+        private async Task VisibleChangeAsync(string page)
+        {
+            // Wait for the browser to fully load
+            //if (CefBrowsers == null || !CefBrowsers.IsBrowserInitialized) return;
 
-        //private void PdfViewerScrollChanged(ScrollChangedEventArgs arg)
-        //{
-        //    try
-        //    {
-        //        if (CodingTextControl == null || documentViewerInteropControl == null)
-        //            return;
+            if (string.IsNullOrEmpty(page)) return;
 
-        //        // Calculate scroll percentage from PDF viewer
-        //        double pdfScrollRatio = documentViewerInteropControl.VerticalOffset /
-        //                                (documentViewerInteropControl.ExtentHeight - documentViewerInteropControl.ViewportHeight);
 
-        //        // Calculate equivalent scroll position in the text editor
-        //        double textEditorScrollPosition = pdfScrollRatio * (CodingTextControl.ExtentHeight - CodingTextControl.ViewportHeight);
+            GetPDFContent GetPDFContentService = new GetPDFContent();
+            //string getTag = await GetVisiblePageNumberAsync();
 
-        //        // Apply scroll position to text editor
-        //        CodingTextControl.ScrollToVerticalOffset(textEditorScrollPosition);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorMessage(ex);
-        //    }
-        //}
+            string browsertag = TagPageRegexBrowser(page);
+
+            if (browsertag != null && lastDetectedPage != browsertag)
+            {
+                lastDetectedPage = browsertag;
+
+                int getPdfPage = GetPDFContentService.FindPDFPageByContent(DocumentCollection, browsertag, UpperPage, BottomPage, BothTopBottom);
+
+                if (getPdfPage != 0)
+                {
+                    CurrentPDFPage = getPdfPage;
+
+                }
+                else { return; }
+            }
+        }
+
+        private async Task ExecuteJavaScriptOnPageLoad()
+        {
+            if (CefBrowsers.GetBrowser() != null && CefBrowsers.GetBrowser().MainFrame != null)
+            {
+                var script = @"
+                            window.addEventListener('scroll', () => {
+                                const pages = document.querySelectorAll('page');
+                                for (const page of pages) {
+                                    const rect = page.getBoundingClientRect();
+                                    if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                                        CefSharp.PostMessage(page.outerHTML);
+                                        return;
+                                    }
+                                }
+                            });
+                        ";
+
+                await CefBrowsers.GetBrowser().MainFrame.EvaluateScriptAsync(script);
+            }
+        }
+
+
+
+
+
 
 
         #region trash code
@@ -991,6 +1222,101 @@ namespace Usml_Xml_Pdf_Viewer.ViewModel
         //        }
         //    }
 
+        //}
+
+        //string script = @"
+        //    (() => {
+        //        let pages = document.querySelectorAll('page');
+        //        let visiblePages = [];
+
+        //        pages.forEach(page => {
+        //            let rect = page.getBoundingClientRect();
+        //            if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+        //                visiblePages.push(page.innerText.trim());
+        //            }
+        //        });
+
+        //        return visiblePages.length > 0 ? visiblePages[0] : null;
+        //    })();
+        //";
+
+
+        //string script = @"
+        //                (() => {
+        //                    window.addEventListener('scroll', function() {
+        //                        let visiblePage = null;
+        //                        let pages = document.querySelectorAll('page'); // All <page> elements in the DOM
+
+        //                        // Loop through all pages and check if they are visible in the viewport
+        //                        for (let page of pages) {
+        //                            let rect = page.getBoundingClientRect();
+        //                            if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+        //                                visiblePage = page.outerHTML;
+        //                                break;
+        //                            }
+        //                        }
+
+        //                        // Send the visible page information to C#
+        //                        if (visiblePage) {
+        //                            CefSharp.PostMessage(visiblePage);
+        //                        }
+        //                    });
+        //                })();
+        //            ";
+
+        //private async Task<int?> GetVisiblePageNumberWithoutJS()
+        //{
+        //    if (CefBrowsers.GetBrowser() is null) return null;
+
+        //    var host = CefBrowsers.GetBrowser().GetHost();
+        //    var frame = CefBrowsers.GetBrowser().MainFrame;
+
+        //    // Get scroll position
+        //    var scrollPosition = await GetScrollPositionAsync();
+        //    if (scrollPosition is null) return null;
+
+        //    double scrollY = scrollPosition.Value;
+
+        //    // Estimate the visible page
+        //    int? visiblePage = EstimateVisiblePage(scrollY);
+
+        //    WarningMessage($"Currently visible page: {visiblePage}");
+        //    return visiblePage;
+        //}
+
+        //// Helper method to get scroll position
+        //private async Task<double?> GetScrollPositionAsync()
+        //{
+        //    var response = await CefBrowsers.EvaluateScriptAsync("window.scrollY;");
+        //    if (response.Success && response.Result is double scrollY)
+        //    {
+        //        return scrollY;
+        //    }
+        //    return null;
+        //}
+
+        //// Method to estimate which page is visible based on scroll position
+        //private int? EstimateVisiblePage(double scrollY)
+        //{
+        //    // Define estimated Y-positions of <page> elements
+        //    var pagePositions = new Dictionary<int, double>
+        //        {
+        //            { 1, 0 },   // Page 1 starts at Y = 0
+        //            { 2, 800 }, // Example: Page 2 starts at Y = 800
+        //            { 3, 1600 },
+        //            { 4, 2400 },
+        //            // Add more based on your XML layout
+        //        };
+
+        //    foreach (var page in pagePositions.OrderByDescending(p => p.Value))
+        //    {
+        //        if (scrollY >= page.Value)
+        //        {
+        //            return page.Key;
+        //        }
+        //    }
+
+        //    return null;
         //}
         #endregion
     }
